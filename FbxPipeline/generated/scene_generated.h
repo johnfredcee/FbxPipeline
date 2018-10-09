@@ -61,7 +61,7 @@ struct FileFb;
 struct SceneFb;
 
 enum EVersionFb {
-  EVersionFb_Value = 5,
+  EVersionFb_Value = 6,
   EVersionFb_MIN = EVersionFb_Value,
   EVersionFb_MAX = EVersionFb_Value
 };
@@ -1121,14 +1121,24 @@ MANUALLY_ALIGNED_STRUCT(4) AnimCurveKeyFb FLATBUFFERS_FINAL_CLASS {
  private:
   float time_;
   float value_;
+  float arrive_tangent_;
+  float leave_tangent_;
+  uint8_t interpolationMode_;
+  int8_t padding0__;  int16_t padding1__;
 
  public:
   AnimCurveKeyFb() {
     memset(this, 0, sizeof(AnimCurveKeyFb));
   }
-  AnimCurveKeyFb(float _time, float _value)
+  AnimCurveKeyFb(float _time, float _value, float _arrive_tangent, float _leave_tangent, EInterpolationModeFb _interpolationMode)
       : time_(flatbuffers::EndianScalar(_time)),
-        value_(flatbuffers::EndianScalar(_value)) {
+        value_(flatbuffers::EndianScalar(_value)),
+        arrive_tangent_(flatbuffers::EndianScalar(_arrive_tangent)),
+        leave_tangent_(flatbuffers::EndianScalar(_leave_tangent)),
+        interpolationMode_(flatbuffers::EndianScalar(static_cast<uint8_t>(_interpolationMode))),
+        padding0__(0),
+        padding1__(0) {
+    (void)padding0__;    (void)padding1__;
   }
   float time() const {
     return flatbuffers::EndianScalar(time_);
@@ -1142,8 +1152,26 @@ MANUALLY_ALIGNED_STRUCT(4) AnimCurveKeyFb FLATBUFFERS_FINAL_CLASS {
   void mutate_value(float _value) {
     flatbuffers::WriteScalar(&value_, _value);
   }
+  float arrive_tangent() const {
+    return flatbuffers::EndianScalar(arrive_tangent_);
+  }
+  void mutate_arrive_tangent(float _arrive_tangent) {
+    flatbuffers::WriteScalar(&arrive_tangent_, _arrive_tangent);
+  }
+  float leave_tangent() const {
+    return flatbuffers::EndianScalar(leave_tangent_);
+  }
+  void mutate_leave_tangent(float _leave_tangent) {
+    flatbuffers::WriteScalar(&leave_tangent_, _leave_tangent);
+  }
+  EInterpolationModeFb interpolationMode() const {
+    return static_cast<EInterpolationModeFb>(flatbuffers::EndianScalar(interpolationMode_));
+  }
+  void mutate_interpolationMode(EInterpolationModeFb _interpolationMode) {
+    flatbuffers::WriteScalar(&interpolationMode_, static_cast<uint8_t>(_interpolationMode));
+  }
 };
-STRUCT_END(AnimCurveKeyFb, 8);
+STRUCT_END(AnimCurveKeyFb, 20);
 
 MANUALLY_ALIGNED_STRUCT(4) TextureFb FLATBUFFERS_FINAL_CLASS {
  private:
@@ -1877,9 +1905,11 @@ struct AnimCurveFb FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ID = 4,
     VT_NAME_ID = 6,
-    VT_PROPERTY = 8,
-    VT_CHANNEL = 10,
-    VT_KEYS = 12
+    VT_ANIM_STACK_ID = 8,
+    VT_ANIM_LAYER_ID = 10,
+    VT_PROPERTY = 12,
+    VT_CHANNEL = 14,
+    VT_KEYS = 16
   };
   uint32_t id() const {
     return GetField<uint32_t>(VT_ID, 0);
@@ -1906,6 +1936,18 @@ struct AnimCurveFb FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
       return 0;
     }
   }
+  uint32_t anim_stack_id() const {
+    return GetField<uint32_t>(VT_ANIM_STACK_ID, 0);
+  }
+  bool mutate_anim_stack_id(uint32_t _anim_stack_id) {
+    return SetField<uint32_t>(VT_ANIM_STACK_ID, _anim_stack_id, 0);
+  }
+  uint32_t anim_layer_id() const {
+    return GetField<uint32_t>(VT_ANIM_LAYER_ID, 0);
+  }
+  bool mutate_anim_layer_id(uint32_t _anim_layer_id) {
+    return SetField<uint32_t>(VT_ANIM_LAYER_ID, _anim_layer_id, 0);
+  }
   EAnimCurvePropertyFb property() const {
     return static_cast<EAnimCurvePropertyFb>(GetField<uint8_t>(VT_PROPERTY, 0));
   }
@@ -1928,6 +1970,8 @@ struct AnimCurveFb FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_ID) &&
            VerifyField<uint32_t>(verifier, VT_NAME_ID) &&
+           VerifyField<uint32_t>(verifier, VT_ANIM_STACK_ID) &&
+           VerifyField<uint32_t>(verifier, VT_ANIM_LAYER_ID) &&
            VerifyField<uint8_t>(verifier, VT_PROPERTY) &&
            VerifyField<uint8_t>(verifier, VT_CHANNEL) &&
            VerifyOffset(verifier, VT_KEYS) &&
@@ -1944,6 +1988,12 @@ struct AnimCurveFbBuilder {
   }
   void add_name_id(uint32_t name_id) {
     fbb_.AddElement<uint32_t>(AnimCurveFb::VT_NAME_ID, name_id, 0);
+  }
+  void add_anim_stack_id(uint32_t anim_stack_id) {
+    fbb_.AddElement<uint32_t>(AnimCurveFb::VT_ANIM_STACK_ID, anim_stack_id, 0);
+  }
+  void add_anim_layer_id(uint32_t anim_layer_id) {
+    fbb_.AddElement<uint32_t>(AnimCurveFb::VT_ANIM_LAYER_ID, anim_layer_id, 0);
   }
   void add_property(EAnimCurvePropertyFb property) {
     fbb_.AddElement<uint8_t>(AnimCurveFb::VT_PROPERTY, static_cast<uint8_t>(property), 0);
@@ -1970,11 +2020,15 @@ inline flatbuffers::Offset<AnimCurveFb> CreateAnimCurveFb(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t id = 0,
     uint32_t name_id = 0,
+    uint32_t anim_stack_id = 0,
+    uint32_t anim_layer_id = 0,
     EAnimCurvePropertyFb property = EAnimCurvePropertyFb_LclTranslation,
     EAnimCurveChannelFb channel = EAnimCurveChannelFb_X,
     flatbuffers::Offset<flatbuffers::Vector<const AnimCurveKeyFb *>> keys = 0) {
   AnimCurveFbBuilder builder_(_fbb);
   builder_.add_keys(keys);
+  builder_.add_anim_layer_id(anim_layer_id);
+  builder_.add_anim_stack_id(anim_stack_id);
   builder_.add_name_id(name_id);
   builder_.add_id(id);
   builder_.add_channel(channel);
@@ -1986,6 +2040,8 @@ inline flatbuffers::Offset<AnimCurveFb> CreateAnimCurveFbDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t id = 0,
     uint32_t name_id = 0,
+    uint32_t anim_stack_id = 0,
+    uint32_t anim_layer_id = 0,
     EAnimCurvePropertyFb property = EAnimCurvePropertyFb_LclTranslation,
     EAnimCurveChannelFb channel = EAnimCurveChannelFb_X,
     const std::vector<const AnimCurveKeyFb *> *keys = nullptr) {
@@ -1993,6 +2049,8 @@ inline flatbuffers::Offset<AnimCurveFb> CreateAnimCurveFbDirect(
       _fbb,
       id,
       name_id,
+      anim_stack_id,
+      anim_layer_id,
       property,
       channel,
       keys ? _fbb.CreateVector<const AnimCurveKeyFb *>(*keys) : 0);

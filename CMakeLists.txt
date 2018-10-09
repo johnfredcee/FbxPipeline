@@ -10,22 +10,39 @@ message(STATUS "CMAKE_SYSTEM = ${CMAKE_SYSTEM}")
 message(STATUS "CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}")
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-set(BUILD_FOLDER_SUFFIX "build_${CMAKE_SYSTEM_NAME}_${CMAKE_SYSTEM_PROCESSOR}")
+set(BUILD_FOLDER_SUFFIX "build_${CMAKE_SYSTEM_NAME}_${CMAKE_SYSTEM_PROCESSOR}_${CMAKE_CXX_COMPILER_ID}")
 string(TOLOWER  ${BUILD_FOLDER_SUFFIX} BUILD_FOLDER_SUFFIX)
 message(STATUS "BUILD_FOLDER_SUFFIX = ${BUILD_FOLDER_SUFFIX}")
 
+message(STATUS "FBX_SDK_INCLUDE_DIR = ${FBX_SDK_INCLUDE_DIR}")
+message(STATUS "FBX_SDK_LIBRARY_DEBUG = ${FBX_SDK_LIBRARY_DEBUG}")
+message(STATUS "FBX_SDK_LIBRARY_RELEASE = ${FBX_SDK_LIBRARY_RELEASE}")
+
+if (FBX_SDK_INCLUDE_DIR STREQUAL "")
+    message(FATAL_ERROR "FBXSDK not installed (FBX_SDK_INCLUDE_DIR not found).")
+elseif(FBX_SDK_LIBRARY_DEBUG STREQUAL "")
+    message(FATAL_ERROR "FBXSDK not installed (FBX_SDK_LIBRARY_DEBUG not found).")
+elseif(FBX_SDK_LIBRARY_RELEASE STREQUAL "")
+    message(FATAL_ERROR "FBXSDK not installed (FBX_SDK_LIBRARY_RELEASE not found).")
+endif()
+
+if (APPLE)
+    find_package(Boost COMPONENTS system filesystem REQUIRED)
+    message(STATUS "Boost_INCLUDE_DIRS = {Boost_INCLUDE_DIRS}")
+    message(STATUS "Boost_SYSTEM_LIBRARY = {Boost_SYSTEM_LIBRARY}")
+    message(STATUS "Boost_FILESYSTEM_LIBRARY = {Boost_FILESYSTEM_LIBRARY}")
+endif()
+
 if (WIN32)
-    set(
-        default_cmake_args
-        -G
-        "Visual Studio 15 2017 Win64"
-        -B${BUILD_FOLDER_SUFFIX} "-H."
-    )
+    set( default_cmake_args
+         -G "Visual Studio 15 2017 Win64"
+         -B${BUILD_FOLDER_SUFFIX} "-H." )
+elseif(APPLE)
+    set( default_cmake_args
+         -B${BUILD_FOLDER_SUFFIX} -H. )
 else()
-    set(
-        default_cmake_args
-        -B${BUILD_FOLDER_SUFFIX} -H.
-    )
+    set( default_cmake_args
+         -B${BUILD_FOLDER_SUFFIX} -H. )
 endif()
 
 ExternalProject_Add(
@@ -119,27 +136,6 @@ message(STATUS "zlib_source_dir = ${zlib_source_dir}")
 message(STATUS "zlib_binary_dir = ${zlib_binary_dir}")
 
 ExternalProject_Add(
-    rapidjson
-    GIT_REPOSITORY "git@github.com:Tencent/rapidjson.git"
-    GIT_TAG "master"
-    UPDATE_COMMAND ""
-    PATCH_COMMAND ""
-    SOURCE_DIR "${CMAKE_SOURCE_DIR}/dependencies/rapidjson"
-    CMAKE_ARGS ${default_cmake_args} -DRAPIDJSON_BUILD_DOC=OFF
-                                     -DRAPIDJSON_BUILD_TESTS=OFF
-                                     -DRAPIDJSON_BUILD_EXAMPLES=OFF
-    TEST_COMMAND ""
-    INSTALL_COMMAND ""
-)
-
-ExternalProject_Get_Property(rapidjson SOURCE_DIR)
-ExternalProject_Get_Property(rapidjson BINARY_DIR)
-set(rapidjson_source_dir ${SOURCE_DIR})
-set(rapidjson_binary_dir ${BINARY_DIR})
-message(STATUS "rapidjson_source_dir = ${rapidjson_source_dir}")
-message(STATUS "rapidjson_binary_dir = ${rapidjson_binary_dir}")
-
-ExternalProject_Add(
     pybind11
     GIT_REPOSITORY "git@github.com:pybind/pybind11.git"
     GIT_TAG "master"
@@ -177,32 +173,13 @@ if ( PYTHONLIBS_FOUND )
     message(STATUS "PYTHON_DIR = ${PYTHON_DIR}")
 endif ()
 
+set (CMAKE_CXX_STANDARD 11)
 if (WIN32)
     set(CONFIGURATION_SUFFIX "/$(Configuration)")
-    set(FBX_SDK_INCLUDE_DIR "C:/Program Files/Autodesk/FBX/FBX SDK/2018.1.1/include" CACHE PATH "FBX SDK Include Directory")
-    set(FBX_SDK_LIBRARY_DEBUG "C:/Program Files/Autodesk/FBX/FBX SDK/2018.1.1/lib/vs2015/x64/debug/libfbxsdk-md.lib" CACHE PATH "FBX SDK Library")
-    set(FBX_SDK_LIBRARY_RELEASE "C:/Program Files/Autodesk/FBX/FBX SDK/2018.1.1/lib/vs2015/x64/release/libfbxsdk-md.lib" CACHE PATH "FBX SDK Library")
 else()
-    add_definitions("-g")
-    
-    if (CMAKE_VERSION VERSION_LESS "3.1")
-      if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-      endif ()
-    else ()
-      set (CMAKE_CXX_STANDARD 11)
-    endif ()
-
     set(CONFIGURATION_SUFFIX "")
-    set(FBX_SDK_INCLUDE_DIR "~/FbxSdk/include" CACHE PATH "FBX SDK Include Directory")
-    set(FBX_SDK_LIBRARY_DIR "~/FbxSdk/lib" CACHE PATH "FBX SDK Library Directory")
-    find_library( FBX_SDK_LIBRARY_RELEASE fbxsdk HINTS ${FBX_SDK_LIBRARY_DIR}/gcc4/x64/release ${FBX_SDK_LIBRARY_DIR}/clang/release )
-    set(FBX_SDK_LIBRARY_DEBUG ${FBX_SDK_LIBRARY_RELEASE} CACHE PATH "FBX SDK Library")
+    add_definitions("-g")
 endif()
-
-message(STATUS "FBX_SDK_INCLUDE_DIR = ${FBX_SDK_INCLUDE_DIR}")
-message(STATUS "FBX_SDK_LIBRARY_DEBUG = ${FBX_SDK_LIBRARY_DEBUG}")
-message(STATUS "FBX_SDK_LIBRARY_RELEASE = ${FBX_SDK_LIBRARY_RELEASE}")
 
 if (WIN32)
     add_custom_command(
@@ -312,7 +289,6 @@ add_dependencies(
     spdlog
     zlib
     flatbuffers
-    rapidjson
     pybind11
 )
 
@@ -328,9 +304,9 @@ target_include_directories(
     ${CMAKE_SOURCE_DIR}/dependencies/spdlog/include
     ${flatbuffers_source_dir}/include
     ${flatbuffers_source_dir}/grpc
-    ${rapidjson_source_dir}/include
     ${pybind11_source_dir}/include
     ${FBX_SDK_INCLUDE_DIR}
+    ${Boost_INCLUDE_DIRS}
 )
 
 if (WIN32)
@@ -344,6 +320,19 @@ if (WIN32)
         winmm.lib
         imm32.lib
         version.lib
+    )
+elseif(APPLE)
+    set(
+        third_party_libs
+        ${zlib_binary_dir}/libz.a
+        ${flatbuffers_binary_dir}/libflatbuffers.a
+        ${PYTHON_LIBRARY}
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        "-framework Cocoa"
+        pthread
+        m
+        dl
     )
 else()
     set(
@@ -382,7 +371,6 @@ target_include_directories(
     ${CMAKE_SOURCE_DIR}/dependencies/spdlog/include
     ${flatbuffers_source_dir}/include
     ${flatbuffers_source_dir}/grpc
-    ${rapidjson_source_dir}/include
     ${pybind11_source_dir}/include
     ${FBX_SDK_INCLUDE_DIR}
 )

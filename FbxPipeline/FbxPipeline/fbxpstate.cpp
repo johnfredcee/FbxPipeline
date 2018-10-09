@@ -327,7 +327,7 @@ bool apemode::State::Finalize( ) {
         tempCurveKeys.clear( );
         tempCurveKeys.reserve( curve.keys.size( ) );
         std::transform( curve.keys.begin( ), curve.keys.end( ), std::back_inserter( tempCurveKeys ), [&]( const AnimCurveKey& curveKey ) {
-            return apemodefb::AnimCurveKeyFb( curveKey.time, curveKey.value );
+            return apemodefb::AnimCurveKeyFb( curveKey.time, curveKey.value, curveKey.arriveTangent, curveKey.leaveTangent, curveKey.interpolationMode );
         } );
 
         auto keysOffset = builder.CreateVectorOfStructs( tempCurveKeys );
@@ -335,14 +335,16 @@ bool apemode::State::Finalize( ) {
         apemodefb::AnimCurveFbBuilder curveBuilder( builder );
         curveBuilder.add_id( curve.id );
         curveBuilder.add_channel( curve.channel );
+        curveBuilder.add_anim_stack_id( curve.animStackId );
+        curveBuilder.add_anim_layer_id( curve.animLayerId );
         curveBuilder.add_property( curve.property );
         curveBuilder.add_name_id( curve.nameId );
         curveBuilder.add_keys( keysOffset );
         curveOffsets.push_back( curveBuilder.Finish( ) );
     }
 
-    const auto curvesOffset = builder.CreateVector( curveOffsets );
-    console->info( "< Succeeded {} ", ToPrettySizeString( curvesOffset.o ) );
+    const auto animCurvesOffset = builder.CreateVector( curveOffsets );
+    console->info( "< Succeeded {} ", ToPrettySizeString( animCurvesOffset.o ) );
 
     //
     // Finalize materials
@@ -503,6 +505,8 @@ bool apemode::State::Finalize( ) {
     sceneBuilder.add_cameras( camerasOffset );
     sceneBuilder.add_lights( lightsOffset );
     sceneBuilder.add_anim_stacks( animStacksOffset );
+    sceneBuilder.add_anim_layers( animLayersOffset );
+    sceneBuilder.add_anim_curves( animCurvesOffset );
     sceneBuilder.add_version( apemodefb::EVersionFb::EVersionFb_Value );
 
     auto sceneOffset = sceneBuilder.Finish( );

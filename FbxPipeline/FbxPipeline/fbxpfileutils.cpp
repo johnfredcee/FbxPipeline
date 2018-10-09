@@ -1,21 +1,29 @@
 #include <fbxppch.h>
 #include <fbxpstate.h>
 
-#define _FbxPipeline_UnsafeFileReadWrite
+// #define _FbxPipeline_UnsafeFileReadWrite
 #if defined( _FbxPipeline_UnsafeFileReadWrite )
 #include <stdio.h>
 #endif
 
+#if __APPLE__
+#include <boost/filesystem.hpp>
+namespace std {
+    namespace filesystem = boost::filesystem;
+    // namespace filesystem = std::tr2::sys;
+}
+#else
 #include <experimental/filesystem>
 // #include <filesystem>
-#include <fstream>
-#include <iterator>
-#include <string>
-
 namespace std {
     namespace filesystem = std::experimental::filesystem::v1;
     // namespace filesystem = std::tr2::sys;
 }
+#endif
+
+#include <fstream>
+#include <iterator>
+#include <string>
 
 std::string CurrentDirectory( ) {
     return std::filesystem::current_path( ).string( );
@@ -299,13 +307,15 @@ void InitializeSeachLocations( ) {
          *   > /c/path/to/model/ModelName/textures/diffuse.png, ...
          **/
 
-        std::string textureDirectorySketchfab = ReplaceSlashes( RealPath( ( inputDirectory + "/../textures" ) ) );
+        std::string textureDirectorySketchfab = inputDirectory + "/../textures";
         if ( DirectoryExists( textureDirectorySketchfab.c_str( ) ) ) {
+            textureDirectorySketchfab = ReplaceSlashes( RealPath( textureDirectorySketchfab ) );
             searchLocations.push_back( textureDirectorySketchfab + "/**" );
         } else {
             /* Model file could be additionally archived, and when unarchived could be placed in the directory. */
-            textureDirectorySketchfab = ReplaceSlashes( RealPath( ( inputDirectory + "/../../textures" ) ) );
+            textureDirectorySketchfab = inputDirectory + "/../../textures";
             if ( DirectoryExists( textureDirectorySketchfab.c_str( ) ) ) {
+                textureDirectorySketchfab = ReplaceSlashes( RealPath( textureDirectorySketchfab ) );
                 searchLocations.push_back( textureDirectorySketchfab + "/**" );
             }
         }

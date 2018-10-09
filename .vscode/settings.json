@@ -69,6 +69,8 @@
                 "utility": "cpp",
                 "valarray": "cpp"
         },
+        "cmake.configureOnOpen": false,
+        "python.pythonPath": "D:\\Apps\\Python35\\python.exe",
         
         // Controls the font family.
         // "editor.fontFamily": "'Ubuntu Mono'"
