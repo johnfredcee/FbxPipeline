@@ -948,7 +948,7 @@ void SplitFilename( const std::string& filePath, std::string * parentFolderName,
             *fileName = filePath.substr( found + 1 );
     } else {
         if ( parentFolderName )
-            *parentFolderName = "/";
+            *parentFolderName = "./";
         if ( fileName )
             *fileName = filePath;
     }

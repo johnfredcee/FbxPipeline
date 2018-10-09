@@ -47,7 +47,7 @@ endif()
 
 ExternalProject_Add(
     mathfu
-    GIT_REPOSITORY "git@github.com:google/mathfu.git"
+    GIT_REPOSITORY "https://github.com/google/mathfu.git"
     GIT_TAG "master"
     SOURCE_DIR "${CMAKE_SOURCE_DIR}/dependencies/mathfu"
     CONFIGURE_COMMAND ""
@@ -64,7 +64,7 @@ message(STATUS "mathfu_source_dir = ${mathfu_source_dir}")
 
 ExternalProject_Add(
     cxxopts
-    GIT_REPOSITORY "git@github.com:jarro2783/cxxopts.git"
+    GIT_REPOSITORY "https://github.com/jarro2783/cxxopts.git"
     GIT_TAG "1_0"
     SOURCE_DIR "${CMAKE_SOURCE_DIR}/dependencies/cxxopts"
     CONFIGURE_COMMAND ""
@@ -81,7 +81,7 @@ message(STATUS "cxxopts_source_dir = ${cxxopts_source_dir}")
 
 ExternalProject_Add(
     spdlog
-    GIT_REPOSITORY "git@github.com:gabime/spdlog.git"
+    GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
     GIT_TAG "master"
     SOURCE_DIR "${CMAKE_SOURCE_DIR}/dependencies/spdlog"
     CONFIGURE_COMMAND ""
@@ -98,7 +98,7 @@ message(STATUS "spdlog_source_dir = ${spdlog_source_dir}")
 
 ExternalProject_Add(
     flatbuffers
-    GIT_REPOSITORY "git@github.com:google/flatbuffers.git"
+    GIT_REPOSITORY "https://github.com/google/flatbuffers.git"
     GIT_TAG "v1.8.0"
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
@@ -118,7 +118,7 @@ message(STATUS "flatbuffers_binary_dir = ${flatbuffers_binary_dir}")
 
 ExternalProject_Add(
     zlib
-    GIT_REPOSITORY "git@github.com:madler/zlib.git"
+    GIT_REPOSITORY "https://github.com/madler/zlib.git"
     GIT_TAG "master"
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
@@ -136,8 +136,29 @@ message(STATUS "zlib_source_dir = ${zlib_source_dir}")
 message(STATUS "zlib_binary_dir = ${zlib_binary_dir}")
 
 ExternalProject_Add(
+    rapidjson
+    GIT_REPOSITORY "https://github.com/Tencent/rapidjson.git"
+    GIT_TAG "master"
+    UPDATE_COMMAND ""
+    PATCH_COMMAND ""
+    SOURCE_DIR "${CMAKE_SOURCE_DIR}/dependencies/rapidjson"
+    CMAKE_ARGS ${default_cmake_args} -DRAPIDJSON_BUILD_DOC=OFF
+                                     -DRAPIDJSON_BUILD_TESTS=OFF
+                                     -DRAPIDJSON_BUILD_EXAMPLES=OFF
+    TEST_COMMAND ""
+    INSTALL_COMMAND ""
+)
+
+ExternalProject_Get_Property(rapidjson SOURCE_DIR)
+ExternalProject_Get_Property(rapidjson BINARY_DIR)
+set(rapidjson_source_dir ${SOURCE_DIR})
+set(rapidjson_binary_dir ${BINARY_DIR})
+message(STATUS "rapidjson_source_dir = ${rapidjson_source_dir}")
+message(STATUS "rapidjson_binary_dir = ${rapidjson_binary_dir}")
+
+ExternalProject_Add(
     pybind11
-    GIT_REPOSITORY "git@github.com:pybind/pybind11.git"
+    GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
     GIT_TAG "master"
     SOURCE_DIR "${CMAKE_SOURCE_DIR}/dependencies/pybind11"
     CONFIGURE_COMMAND ""
@@ -176,6 +197,9 @@ endif ()
 set (CMAKE_CXX_STANDARD 11)
 if (WIN32)
     set(CONFIGURATION_SUFFIX "/$(Configuration)")
+    set(FBX_SDK_INCLUDE_DIR "D:/Dev/Apps/Autodesk/FBX2019/2019.0/include" CACHE PATH "FBX SDK Include Directory")
+    set(FBX_SDK_LIBRARY_DEBUG "D:/Dev/Apps/Autodesk/FBX2019/2019.0/lib/vs2015/x64/debug/libfbxsdk-md.lib" CACHE PATH "FBX SDK Library")
+    set(FBX_SDK_LIBRARY_RELEASE "D:/Dev/Apps/Autodesk/FBX2019/2019.0/lib/vs2015/x64/release/libfbxsdk-md.lib" CACHE PATH "FBX SDK Library")
 else()
     set(CONFIGURATION_SUFFIX "")
     add_definitions("-g")
